@@ -20,7 +20,7 @@ const client = new Client({
   ]
 });
 
-// 📦 SEUS KITS ATUALIZADOS
+// 📦 SEUS KITS ATUALIZADOS - BUSCA MELHOR
 const kits = {
   'kit_basico': { nome: 'Kit Básico', preco: 4.50 },
   'kit_basico_netherita': { nome: 'Kit Básico Netherita', preco: 7.50 },
@@ -67,7 +67,7 @@ client.on('interactionCreate', async (interaction) => {
         value: kitsList 
       })
       .setColor(0x00FF00)
-      .setFooter({ text: 'Escolha seu kit e faça o pedido!' });
+      .setFooter({ text: 'Digite o nome exato do kit' });
 
     await interaction.reply({ 
       embeds: [embed], 
@@ -84,7 +84,7 @@ client.on('interactionCreate', async (interaction) => {
     const kitInput = new TextInputBuilder()
       .setCustomId('kit')
       .setLabel('🎁 Qual kit você deseja?')
-      .setPlaceholder('Ex: Kit Básico, Kit Boss, Kit Duo...')
+      .setPlaceholder('Ex: Kit Básico, Kit Boss, Kit Duo')
       .setStyle(TextInputStyle.Short)
       .setRequired(true);
 
@@ -103,43 +103,39 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.showModal(modal);
   }
   
-  // MODAL PREENCHIDO
+  // MODAL PREENCHIDO - BUSCA CORRIGIDA
   else if (interaction.isModalSubmit() && interaction.customId === 'compra_modal') {
     const kitEscolhido = interaction.fields.getTextInputValue('kit');
     const discordTag = interaction.fields.getTextInputValue('tag');
 
-    // Encontrar o kit (busca mais flexível)
-    const kitKey = Object.keys(kits).find(key => {
-      const kitNome = kits[key].nome.toLowerCase();
-      const busca = kitEscolhido.toLowerCase();
-      return kitNome.includes(busca) || busca.includes(kitNome);
+    // BUSCA MELHOR - remove espaços e deixa minúsculo
+    const busca = kitEscolhido.toLowerCase().replace(/\s+/g, ' ');
+    
+    // Encontrar o kit (busca mais inteligente)
+    const kitEncontrado = Object.values(kits).find(kit => {
+      const kitNome = kit.nome.toLowerCase();
+      return kitNome.includes(busca) || 
+             busca.includes(kitNome) ||
+             kitNome.replace(/\s+/g, ' ').includes(busca);
     });
 
-    if (!kitKey) {
-      // Sugerir kits similares
-      const sugestoes = Object.values(kits)
-        .filter(kit => kit.nome.toLowerCase().includes(kitEscolhido.toLowerCase().split(' ')[0]))
-        .slice(0, 3)
-        .map(kit => `• ${kit.nome}`)
+    if (!kitEncontrado) {
+      // Mostrar lista de kits disponíveis
+      const kitsDisponiveis = Object.values(kits)
+        .map(kit => `• ${kit.nome} - R$ ${kit.preco.toFixed(2)}`)
         .join('\n');
       
-      const mensagemErro = sugestoes 
-        ? `❌ **Kit não encontrado!**\n\n💡 **Sugestões:**\n${sugestoes}`
-        : '❌ **Kit não encontrado!** Verifique o nome do kit.';
-      
       await interaction.reply({
-        content: mensagemErro,
+        content: `❌ **Kit não encontrado!**\n\n📋 **Kits disponíveis:**\n${kitsDisponiveis}\n\n💡 **Digite o nome exato do kit**`,
         ephemeral: true
       });
       return;
     }
 
-    const kit = kits[kitKey];
-    
     // Salvar pedido temporário
     pedidosTemp.set(interaction.user.id, {
-      kit: kit.nome,
-      preco: kit.preco,
+      kit: kitEncontrado.nome,
+      preco: kitEncontrado.preco,
       discordTag: discordTag
     });
 
@@ -148,7 +144,7 @@ client.on('interactionCreate', async (interaction) => {
       .addComponents(
         new ButtonBuilder()
           .setCustomId('confirmar_compra')
-          .setLabel(`✅ Confirmar - R$ ${kit.preco.toFixed(2)}`)
+          .setLabel(`✅ Confirmar - R$ ${kitEncontrado.preco.toFixed(2)}`)
           .setStyle(ButtonStyle.Success)
       );
 
@@ -156,10 +152,9 @@ client.on('interactionCreate', async (interaction) => {
       .setTitle('💰 **RESUMO DO PEDIDO**')
       .setDescription('Confirme seus dados abaixo:')
       .addFields(
-        { name: '🎁 **Kit Escolhido**', value: kit.nome, inline: true },
-        { name: '💵 **Preço**', value: `R$ ${kit.preco.toFixed(2)}`, inline: true },
-        { name: '👤 **Sua Tag**', value: discordTag, inline: false },
-        { name: '🔒 **Próximo Passo**', value: 'Ao confirmar, abriremos um chat privado para finalizar!', inline: false }
+        { name: '🎁 **Kit Escolhido**', value: kitEncontrado.nome, inline: true },
+        { name: '💵 **Preço**', value: `R$ ${kitEncontrado.preco.toFixed(2)}`, inline: true },
+        { name: '👤 **Sua Tag**', value: discordTag, inline: false }
       )
       .setColor(0xF1C40F);
 
@@ -170,6 +165,7 @@ client.on('interactionCreate', async (interaction) => {
     });
   }
   
+  // ... (o resto do código permanece igual)
   // CONFIRMAR COMPRA
   else if (interaction.isButton() && interaction.customId === 'confirmar_compra') {
     const pedido = pedidosTemp.get(interaction.user.id);
@@ -224,8 +220,7 @@ client.on('interactionCreate', async (interaction) => {
           .addFields(
             { name: '🎁 **Kit**', value: pedido.kit, inline: true },
             { name: '💵 **Valor**', value: `R$ ${pedido.preco.toFixed(2)}`, inline: true },
-            { name: '👤 **Tag Discord**', value: pedido.discordTag, inline: true },
-            { name: '📞 **Contato**', value: `[Clique para falar](https://discord.com/users/${interaction.user.id})`, inline: false }
+            { name: '👤 **Tag Discord**', value: pedido.discordTag, inline: true }
           )
           .setColor(0xFF0000)
           .setTimestamp();
@@ -273,12 +268,11 @@ client.on('interactionCreate', async (interaction) => {
       .setStyle(TextInputStyle.Short)
       .setRequired(true);
 
-    modal.addComponents(
-      new ActionRowBuilder().addComponents(coordenadasInput),
-      new ActionRowBuilder().addComponents(nickInput)
-    );
+    const row1 = new ActionRowBuilder().addComponents(coordenadasInput);
+    const row2 = new ActionRowBuilder().addComponents(nickInput);
+    deliveryModal.addComponents(row1, row2);
 
-    await interaction.showModal(modal);
+    await interaction.showModal(deliveryModal);
   }
   
   // DADOS ENTREGA PREENCHIDOS
