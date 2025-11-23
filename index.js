@@ -30,21 +30,21 @@ const client = new Client({
     ]
 });
 
-// 📦 CATÁLOGO DE KITS PROFISSIONAL
+// 📦 SEUS KITS ATUALIZADOS - PREÇOS CORRETOS
 const kits = {
-    'basico': { nome: '🌟 Kit Básico', preco: 4.50, cor: colors.primary },
-    'basico_netherita': { nome: '⚔️ Kit Básico Netherita', preco: 7.50, cor: colors.info },
-    'dima': { nome: '💎 Kit Dima', preco: 9.00, cor: colors.info },
-    'dima_2': { nome: '💎 Kit Dima 2', preco: 6.00, cor: colors.info },
-    'boss': { nome: '👑 Kit Boss', preco: 13.00, cor: colors.warning },
-    'boss_2': { nome: '👑 Kit Boss 2', preco: 20.00, cor: colors.warning },
-    'boss_evo': { nome: '🔥 Kit Boss Evo', preco: 19.00, cor: colors.warning },
-    'besta_1': { nome: '🐲 Kit da Besta 1', preco: 25.00, cor: colors.premium },
-    'besta_2': { nome: '🐲 Kit da Besta 2', preco: 20.00, cor: colors.premium },
-    'netherita_evo': { nome: '🔥 Kit Netherita Evo', preco: 19.00, cor: colors.premium },
-    'gardian': { nome: '🛡️ Kit Gardian', preco: 26.00, cor: colors.premium },
-    'pocao': { nome: '🧪 Kit Poção', preco: 10.00, cor: colors.info },
-    'duo': { nome: '👥 Kit Duo', preco: 30.00, cor: colors.premium }
+    'kit_basico': { nome: '🌟 Kit Básico', preco: 4.50 },
+    'kit_basico_netherita': { nome: '⚔️ Kit Básico Netherita', preco: 7.50 },
+    'kit_dima': { nome: '💎 Kit Dima', preco: 9.00 },
+    'kit_dima_2': { nome: '💎 Kit Dima 2', preco: 6.00 },
+    'kit_boss': { nome: '👑 Kit Boss', preco: 13.00 },
+    'kit_boss_2': { nome: '👑 Kit Boss 2', preco: 20.00 },
+    'kit_boss_evo': { nome: '🔥 Kit Boss Evo', preco: 19.00 },
+    'kit_da_besta_1': { nome: '🐲 Kit da Besta 1', preco: 25.00 },
+    'kit_da_besta_2': { nome: '🐲 Kit da Besta 2', preco: 20.00 },
+    'kit_netherita_evo': { nome: '🔥 Kit Netherita Evo', preco: 19.00 },
+    'kit_gardian': { nome: '🛡️ Kit Gardian', preco: 26.00 },
+    'kit_pocao': { nome: '🧪 Kit Poção', preco: 10.00 },
+    'kit_duo': { nome: '👥 Kit Duo', preco: 30.00 }
 };
 
 const pedidosTemp = new Map();
@@ -59,80 +59,48 @@ client.on('interactionCreate', async (interaction) => {
     // 🛒 COMANDO /COMPRAR
     if (interaction.isCommand() && interaction.commandName === 'comprar') {
         try {
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId('abrir_loja')
-                    .setLabel('🛍️ Abrir Loja')
-                    .setStyle(ButtonStyle.Success)
-                    .setEmoji('🏪')
-            );
+            // Organizar kits por preço
+            const kitsBasicos = Object.values(kits).filter(kit => kit.preco <= 10);
+            const kitsIntermediarios = Object.values(kits).filter(kit => kit.preco > 10 && kit.preco <= 20);
+            const kitsAvancados = Object.values(kits).filter(kit => kit.preco > 20);
 
             const embed = new EmbedBuilder()
-                .setTitle('🏪 **LOJA OFICIAL**')
-                .setDescription('Bem-vindo à nossa loja de kits! Clique no botão abaixo para ver nossos produtos.')
+                .setTitle('🏪 **LOJA DE KITS - PREÇOS ATUALIZADOS**')
+                .setDescription('🎯 **Todos os kits com preços especiais!**\nSelecione o kit desejado:')
                 .setColor(colors.primary)
-                .setThumbnail('https://cdn.discordapp.com/emojis/998805272598900766.webp')
                 .addFields(
-                    { name: '📦 Variedade', value: 'Kits para todos os estilos', inline: true },
-                    { name: '⚡ Entrega', value: 'Rápida e segura', inline: true },
-                    { name: '🛡️ Suporte', value: '24/7 disponível', inline: true }
+                    { 
+                        name: '🎯 **KITS BÁSICOS**', 
+                        value: kitsBasicos.map(kit => `• ${kit.nome} - **R$ ${kit.preco.toFixed(2)}**`).join('\n'),
+                        inline: false 
+                    },
+                    { 
+                        name: '⚡ **KITS INTERMEDIÁRIOS**', 
+                        value: kitsIntermediarios.map(kit => `• ${kit.nome} - **R$ ${kit.preco.toFixed(2)}**`).join('\n'),
+                        inline: false 
+                    },
+                    { 
+                        name: '👑 **KITS AVANÇADOS**', 
+                        value: kitsAvancados.map(kit => `• ${kit.nome} - **R$ ${kit.preco.toFixed(2)}**`).join('\n'),
+                        inline: false 
+                    }
                 )
-                .setFooter({ text: 'Clique em "Abrir Loja" para continuar' })
+                .setFooter({ text: 'Clique em "Comprar Agora" para continuar' })
                 .setTimestamp();
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('iniciar_compra')
+                    .setLabel('🛒 Comprar Agora')
+                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('💰')
+            );
 
             await interaction.reply({ embeds: [embed], components: [row] });
 
         } catch (error) {
             console.error('❌ Erro no comando /comprar:', error);
             await interaction.reply({ content: '❌ Erro ao carregar loja.', ephemeral: true });
-        }
-    }
-
-    // 🏪 BOTÃO ABRIR LOJA
-    else if (interaction.isButton() && interaction.customId === 'abrir_loja') {
-        try {
-            // Organizar kits por categoria
-            const kitsBasicos = Object.values(kits).filter(kit => kit.preco <= 10);
-            const kitsIntermediarios = Object.values(kits).filter(kit => kit.preco > 10 && kit.preco <= 20);
-            const kitsAvancados = Object.values(kits).filter(kit => kit.preco > 20);
-
-            const embed = new EmbedBuilder()
-                .setTitle('📦 **CATÁLOGO DE KITS**')
-                .setDescription('Selecione o kit desejado abaixo:')
-                .setColor(colors.primary)
-                .setThumbnail('https://cdn.discordapp.com/emojis/1128724551988940911.webp')
-                .addFields(
-                    { 
-                        name: '🎯 **KITS BÁSICOS**', 
-                        value: kitsBasicos.map(kit => `• ${kit.nome} - **R$ ${kit.preco.toFixed(2)}**`).join('\n') || '• Nenhum kit disponível',
-                        inline: false 
-                    },
-                    { 
-                        name: '⚡ **KITS INTERMEDIÁRIOS**', 
-                        value: kitsIntermediarios.map(kit => `• ${kit.nome} - **R$ ${kit.preco.toFixed(2)}**`).join('\n') || '• Nenhum kit disponível',
-                        inline: false 
-                    },
-                    { 
-                        name: '👑 **KITS AVANÇADOS**', 
-                        value: kitsAvancados.map(kit => `• ${kit.nome} - **R$ ${kit.preco.toFixed(2)}**`).join('\n') || '• Nenhum kit disponível',
-                        inline: false 
-                    }
-                )
-                .setFooter({ text: 'Digite o nome exato do kit que deseja' });
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId('iniciar_compra')
-                    .setLabel('🛒 Comprar Agora')
-                    .setStyle(ButtonStyle.Primary)
-                    .setEmoji('💰')
-            );
-
-            await interaction.update({ embeds: [embed], components: [row] });
-
-        } catch (error) {
-            console.error('❌ Erro ao abrir loja:', error);
-            await interaction.reply({ content: '❌ Erro ao carregar catálogo.', ephemeral: true });
         }
     }
 
@@ -146,7 +114,7 @@ client.on('interactionCreate', async (interaction) => {
             const kitInput = new TextInputBuilder()
                 .setCustomId('kit_escolhido')
                 .setLabel('🎁 Nome do Kit Desejado')
-                .setPlaceholder('Ex: Kit Boss, Kit Duo, Kit Básico...')
+                .setPlaceholder('Ex: Kit Básico, Kit Boss, Kit Duo...')
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true)
                 .setMaxLength(50);
@@ -178,27 +146,24 @@ client.on('interactionCreate', async (interaction) => {
 
             console.log(`🔍 Buscando kit: "${kitNome}" para ${interaction.user.tag}`);
 
-            // Busca inteligente com tolerância a erros
+            // Busca inteligente
             const kitEncontrado = Object.values(kits).find(kit => 
-                kit.nome.toLowerCase().replace(/[^a-z0-9]/g, '')
-                    .includes(kitNome.toLowerCase().replace(/[^a-z0-9]/g, '')) ||
-                kitNome.toLowerCase().replace(/[^a-z0-9]/g, '')
-                    .includes(kit.nome.toLowerCase().replace(/[^a-z0-9]/g, ''))
+                kit.nome.toLowerCase().includes(kitNome.toLowerCase()) ||
+                kitNome.toLowerCase().includes(kit.nome.toLowerCase())
             );
 
             if (!kitEncontrado) {
-                const sugestoes = Object.values(kits)
-                    .slice(0, 5)
+                const todosKits = Object.values(kits)
                     .map(kit => `• ${kit.nome} - R$ ${kit.preco.toFixed(2)}`)
                     .join('\n');
 
                 const embed = new EmbedBuilder()
                     .setTitle('❌ Kit Não Encontrado')
-                    .setDescription(`**"${kitNome}"** não foi encontrado em nossa loja.`)
+                    .setDescription(`**"${kitNome}"** não foi encontrado.`)
                     .setColor(colors.error)
                     .addFields({
-                        name: '💡 Kits Disponíveis:',
-                        value: sugestoes
+                        name: '📋 **Todos os Kits Disponíveis:**',
+                        value: todosKits
                     })
                     .setFooter({ text: 'Digite o nome exato do kit' });
 
@@ -210,8 +175,7 @@ client.on('interactionCreate', async (interaction) => {
             pedidosTemp.set(interaction.user.id, {
                 kit: kitEncontrado.nome,
                 preco: kitEncontrado.preco,
-                discordTag: discordTag,
-                timestamp: Date.now()
+                discordTag: discordTag
             });
 
             // Embed de confirmação
@@ -219,11 +183,10 @@ client.on('interactionCreate', async (interaction) => {
                 .setTitle('✅ **PEDIDO CONFIRMADO**')
                 .setDescription('Revise seus dados antes de finalizar:')
                 .setColor(colors.success)
-                .setThumbnail('https://cdn.discordapp.com/emojis/1063274999993266216.webp')
                 .addFields(
                     { name: '🎁 **Kit Selecionado**', value: kitEncontrado.nome, inline: true },
                     { name: '💰 **Valor Total**', value: `R$ ${kitEncontrado.preco.toFixed(2)}`, inline: true },
-                    { name: '👤 **Dados do Comprador**', value: `Tag: ${discordTag}\nID: ${interaction.user.id}`, inline: false }
+                    { name: '👤 **Dados do Comprador**', value: `Tag: ${discordTag}`, inline: false }
                 )
                 .setFooter({ text: 'Clique em "Finalizar Compra" para prosseguir' })
                 .setTimestamp();
@@ -241,7 +204,7 @@ client.on('interactionCreate', async (interaction) => {
         } catch (error) {
             console.error('❌ Erro ao processar pedido:', error);
             await interaction.reply({ 
-                content: '❌ Erro ao processar seu pedido. Tente novamente.', 
+                content: '❌ Erro ao processar seu pedido.', 
                 ephemeral: true 
             });
         }
@@ -254,7 +217,7 @@ client.on('interactionCreate', async (interaction) => {
             
             if (!pedido) {
                 await interaction.reply({ 
-                    content: '❌ Pedido não encontrado. Inicie uma nova compra.', 
+                    content: '❌ Pedido não encontrado.', 
                     ephemeral: true 
                 });
                 return;
@@ -265,18 +228,15 @@ client.on('interactionCreate', async (interaction) => {
             
             const embedPagamento = new EmbedBuilder()
                 .setTitle('💰 **PAGAMENTO VIA PIX**')
-                .setDescription('**Siga os passos abaixo para finalizar sua compra:**')
+                .setDescription('**Siga os passos abaixo para finalizar:**')
                 .setColor(colors.info)
-                .setThumbnail('https://cdn.discordapp.com/emojis/1063275000517566464.webp')
                 .addFields(
                     { name: '🎁 **Seu Pedido**', value: pedido.kit, inline: true },
                     { name: '💵 **Valor**', value: `R$ ${pedido.preco.toFixed(2)}`, inline: true },
-                    { name: '🔑 **CHAVE PIX**', value: `\`\`\`${config.seuPix}\`\`\``, inline: false },
-                    { name: '📱 **Como Pagar**', value: '1. Copie a chave PIX acima\n2. Abra seu app bancário\n3. Cole no campo PIX\n4. Confirme o pagamento', inline: false },
-                    { name: '📸 **Comprovante**', value: 'Após pagar, envie o comprovante aqui mesmo!', inline: false }
+                    { name: '🔑 **CHAVE PIX**', value: `\`${config.seuPix}\``, inline: false },
+                    { name: '📱 **Como Pagar**', value: '1. Copie a chave PIX\n2. Abra seu app bancário\n3. Cole no PIX\n4. Confirme o pagamento', inline: false }
                 )
-                .setFooter({ text: 'Pagamento 100% seguro • Entrega rápida' })
-                .setTimestamp();
+                .setFooter({ text: 'Pagamento 100% seguro' });
 
             await user.send({ 
                 content: '🛒 **SEU PEDIDO ESTÁ QUASE PRONTO!**', 
@@ -284,17 +244,6 @@ client.on('interactionCreate', async (interaction) => {
             });
 
             // 2. SOLICITAR DADOS DE ENTREGA
-            const embedEntrega = new EmbedBuilder()
-                .setTitle('🚚 **DADOS PARA ENTREGA**')
-                .setDescription('Preencha os dados abaixo para receber seu kit:')
-                .setColor(colors.warning)
-                .addFields(
-                    { name: '📍 Coordenadas', value: 'Onde quer receber o kit no servidor', inline: false },
-                    { name: '🎮 Nick Minecraft', value: 'Seu nome no jogo', inline: false },
-                    { name: '⏰ Tempo de Entrega', value: 'Após confirmação do pagamento', inline: false }
-                )
-                .setFooter({ text: 'Clique no botão abaixo para preencher' });
-
             const rowEntrega = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('preencher_entrega')
@@ -304,8 +253,7 @@ client.on('interactionCreate', async (interaction) => {
             );
 
             await user.send({ 
-                content: '**📦 INFORME ONDE RECEBER SEU KIT:**', 
-                embeds: [embedEntrega], 
+                content: '**📦 INFORME ONDE RECEBER SEU KIT:**\n\n📍 **Coordenadas** - Onde quer receber\n🎮 **Nick Minecraft** - Seu nome no jogo', 
                 components: [rowEntrega] 
             });
 
@@ -313,24 +261,8 @@ client.on('interactionCreate', async (interaction) => {
             try {
                 const adminUser = await client.users.fetch(config.seuId);
                 
-                const embedNotificacao = new EmbedBuilder()
-                    .setTitle('🛒 **NOVO PEDIDO RECEBIDO!**')
-                    .setDescription(`**Cliente:** ${interaction.user.tag}`)
-                    .setColor(colors.success)
-                    .setThumbnail(interaction.user.displayAvatarURL())
-                    .addFields(
-                        { name: '🎁 **Kit**', value: pedido.kit, inline: true },
-                        { name: '💰 **Valor**', value: `R$ ${pedido.preco.toFixed(2)}`, inline: true },
-                        { name: '👤 **Tag Discord**', value: pedido.discordTag, inline: true },
-                        { name: '🆔 **User ID**', value: interaction.user.id, inline: true },
-                        { name: '📞 **Contato Rápido**', value: `[Clique aqui](https://discord.com/users/${interaction.user.id})`, inline: false }
-                    )
-                    .setFooter({ text: 'Aguardando pagamento' })
-                    .setTimestamp();
-
-                await adminUser.send({ 
-                    content: `🔔 **NOVO PEDIDO - ${pedido.kit}**`, 
-                    embeds: [embedNotificacao] 
+                await adminUser.send({
+                    content: `🛒 **NOVO PEDIDO!**\n\n**Cliente:** ${interaction.user.tag}\n**Kit:** ${pedido.kit}\n**Valor:** R$ ${pedido.preco.toFixed(2)}\n**Tag:** ${pedido.discordTag}`
                 });
 
             } catch (adminError) {
@@ -338,26 +270,16 @@ client.on('interactionCreate', async (interaction) => {
             }
 
             // 4. CONFIRMAÇÃO FINAL
-            const embedFinal = new EmbedBuilder()
-                .setTitle('✅ **COMPRA FINALIZADA!**')
-                .setDescription('Seu pedido foi processado com sucesso!')
-                .setColor(colors.success)
-                .addFields(
-                    { name: '📨 **Mensagens Enviadas**', value: '• Detalhes do PIX\n• Formulário de entrega', inline: false },
-                    { name: '📞 **Próximos Passos**', value: '1. Verifique suas mensagens privadas\n2. Faça o pagamento PIX\n3. Preencha os dados de entrega\n4. Envie o comprovante', inline: false }
-                )
-                .setFooter({ text: 'Obrigado pela preferência! 🎉' })
-                .setTimestamp();
-
             await interaction.update({ 
-                embeds: [embedFinal], 
+                content: '✅ **COMPRA FINALIZADA!**\n\n💬 **Verifique suas MENSAGENS PRIVADAS!**\n\nLá você encontrará:\n• 🔑 PIX para pagamento\n• 📋 Formulário de entrega\n\n📱 **Aguardamos seu pagamento!**', 
+                embeds: [], 
                 components: [] 
             });
 
         } catch (error) {
             console.error('❌ Erro ao finalizar compra:', error);
             await interaction.reply({ 
-                content: '❌ Erro ao processar pagamento. Tente novamente.', 
+                content: '❌ Erro ao processar pagamento.', 
                 ephemeral: true 
             });
         }
@@ -375,16 +297,14 @@ client.on('interactionCreate', async (interaction) => {
                 .setLabel('📍 Coordenadas no Minecraft')
                 .setPlaceholder('Ex: X: 125, Y: 64, Z: -340')
                 .setStyle(TextInputStyle.Paragraph)
-                .setRequired(true)
-                .setMaxLength(100);
+                .setRequired(true);
 
             const nickInput = new TextInputBuilder()
                 .setCustomId('nick_minecraft')
                 .setLabel('🎮 Seu Nick no Minecraft')
                 .setPlaceholder('Ex: SuperJogador123')
                 .setStyle(TextInputStyle.Short)
-                .setRequired(true)
-                .setMaxLength(20);
+                .setRequired(true);
 
             const row1 = new ActionRowBuilder().addComponents(coordenadasInput);
             const row2 = new ActionRowBuilder().addComponents(nickInput);
@@ -413,50 +333,20 @@ client.on('interactionCreate', async (interaction) => {
             }
 
             // Confirmar para o cliente
-            const embedConfirmacao = new EmbedBuilder()
-                .setTitle('✅ **DADOS REGISTRADOS!**')
-                .setDescription('Seus dados de entrega foram salvos com sucesso!')
-                .setColor(colors.success)
-                .addFields(
-                    { name: '📍 **Coordenadas**', value: coordenadas, inline: false },
-                    { name: '🎮 **Nick Minecraft**', value: nickMinecraft, inline: true },
-                    { name: '🎁 **Kit**', value: pedido.kit, inline: true },
-                    { name: '📞 **Status**', value: 'Aguardando confirmação do pagamento', inline: false }
-                )
-                .setFooter({ text: 'Envie o comprovante do PIX quando fizer o pagamento' })
-                .setTimestamp();
-
             await interaction.reply({ 
-                embeds: [embedConfirmacao], 
+                content: `✅ **DADOS SALVOS!**\n\n📍 **Coordenadas:** ${coordenadas}\n🎮 **Nick:** ${nickMinecraft}\n\n📸 **Agora envie o comprovante do PIX!**`, 
                 ephemeral: true 
             });
 
-            // Notificar o vendedor com dados completos
+            // Notificar o vendedor
             try {
                 const adminUser = await client.users.fetch(config.seuId);
                 
-                const embedVendedor = new EmbedBuilder()
-                    .setTitle('🚚 **DADOS DE ENTREGA CONFIRMADOS**')
-                    .setDescription(`**Cliente:** ${interaction.user.tag}`)
-                    .setColor(colors.info)
-                    .setThumbnail('https://cdn.discordapp.com/emojis/1063275000236548116.webp')
-                    .addFields(
-                        { name: '🎁 **Kit**', value: pedido.kit, inline: true },
-                        { name: '💰 **Valor**', value: `R$ ${pedido.preco.toFixed(2)}`, inline: true },
-                        { name: '📍 **Coordenadas**', value: coordenadas, inline: false },
-                        { name: '🎮 **Nick Minecraft**', value: nickMinecraft, inline: true },
-                        { name: '👤 **Tag Discord**', value: pedido.discordTag, inline: true },
-                        { name: '🆔 **User ID**', value: interaction.user.id, inline: true }
-                    )
-                    .setFooter({ text: 'Aguardando comprovante de pagamento' })
-                    .setTimestamp();
-
-                await adminUser.send({ 
-                    content: `📦 **DADOS DE ENTREGA - ${pedido.kit}**`, 
-                    embeds: [embedVendedor] 
+                await adminUser.send({
+                    content: `🚚 **DADOS DE ENTREGA!**\n\n**Cliente:** ${interaction.user.tag}\n**Kit:** ${pedido.kit}\n**Valor:** R$ ${pedido.preco.toFixed(2)}\n**Coordenadas:** ${coordenadas}\n**Nick:** ${nickMinecraft}`
                 });
 
-                // Limpar pedido da memória temporária
+                // Limpar pedido
                 pedidosTemp.delete(interaction.user.id);
 
             } catch (adminError) {
@@ -466,7 +356,7 @@ client.on('interactionCreate', async (interaction) => {
         } catch (error) {
             console.error('❌ Erro ao processar entrega:', error);
             await interaction.reply({ 
-                content: '❌ Erro ao salvar dados de entrega.', 
+                content: '❌ Erro ao salvar dados.', 
                 ephemeral: true 
             });
         }
@@ -478,19 +368,12 @@ client.once('ready', async () => {
     try {
         const rest = new REST({ version: '10' }).setToken(config.token);
         
-        const commands = [{
-            name: 'comprar',
-            description: '🛍️ Acessar a loja de kits',
-            options: []
-        }];
-
         await rest.put(
             Routes.applicationGuildCommands(config.clientId, config.guildId),
-            { body: commands }
+            { body: [{ name: 'comprar', description: '🛍️ Acessar a loja de kits' }] }
         );
 
-        console.log('✅ Comandos registrados com sucesso!');
-        console.log('🏪 Bot pronto para vendas!');
+        console.log('✅ Comandos registrados!');
 
     } catch (error) {
         console.error('❌ Erro ao registrar comandos:', error);
@@ -498,16 +381,5 @@ client.once('ready', async () => {
 });
 
 // 🚀 INICIAR BOT
-client.login(config.token).catch(error => {
-    console.error('❌ Erro ao conectar:', error);
-    process.exit(1);
-});
+client.login(config.token);
 
-// 🛡️ TRATAMENTO DE ERROS GLOBAIS
-process.on('unhandledRejection', (error) => {
-    console.error('❌ Erro não tratado:', error);
-});
-
-process.on('uncaughtException', (error) => {
-    console.error('❌ Exceção não capturada:', error);
-});
