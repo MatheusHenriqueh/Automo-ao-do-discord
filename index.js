@@ -6,7 +6,8 @@ const config = {
     clientId: process.env.CLIENT_ID,
     guildId: process.env.GUILD_ID,
     seuId: process.env.SEU_ID_DISCORD,
-    seuPix: '783e54d9-a017-47ba-8046-c04ef885f04b'
+    seuPix: '783e54d9-a017-47ba-8046-c04ef885f04b',
+    adminChannelId: process.env.ADMIN_CHANNEL_ID
 };
 
 console.log('🚀 Iniciando Bot...');
@@ -20,7 +21,7 @@ const client = new Client({
     ]
 });
 
-// 📦 SEUS KITS ATUALIZADOS
+// 📦 SEUS KITS
 const kits = {
     'kit_basico': { nome: 'Kit Básico', preco: 4.50 },
     'kit_basico_netherita': { nome: 'Kit Básico Netherita', preco: 7.50 },
@@ -41,12 +42,10 @@ const pedidosTemp = new Map();
 
 client.once('ready', () => {
     console.log(`✅ ${client.user.tag} conectado!`);
-    console.log(`📊 ${Object.keys(kits).length} kits carregados`);
 });
 
 // 🎪 COMANDO PRINCIPAL
 client.on('interactionCreate', async (interaction) => {
-    // 🛒 COMANDO /COMPRAR
     if (interaction.isCommand() && interaction.commandName === 'comprar') {
         try {
             const kitsList = Object.values(kits).map(kit => 
@@ -76,7 +75,6 @@ client.on('interactionCreate', async (interaction) => {
         }
     }
 
-    // 🛒 BOTÃO COMPRAR
     else if (interaction.isButton() && interaction.customId === 'comprar_agora') {
         try {
             const modal = new ModalBuilder()
@@ -105,22 +103,14 @@ client.on('interactionCreate', async (interaction) => {
 
         } catch (error) {
             console.error('Erro no modal:', error);
-            if (!interaction.replied) {
-                await interaction.reply({ 
-                    content: '❌ Erro. Tente novamente.', 
-                    ephemeral: true 
-                });
-            }
         }
     }
 
-    // 📝 PROCESSAR PEDIDO
     else if (interaction.isModalSubmit() && interaction.customId === 'formulario_compra') {
         try {
             const kitNome = interaction.fields.getTextInputValue('kit');
             const discordTag = interaction.fields.getTextInputValue('tag');
 
-            // BUSCA SIMPLES E EFETIVA
             const kitEncontrado = Object.values(kits).find(kit => 
                 kit.nome.toLowerCase().includes(kitNome.toLowerCase()) ||
                 kitNome.toLowerCase().includes(kit.nome.toLowerCase())
@@ -138,14 +128,12 @@ client.on('interactionCreate', async (interaction) => {
                 return;
             }
 
-            // SALVAR PEDIDO
             pedidosTemp.set(interaction.user.id, {
                 kit: kitEncontrado.nome,
                 preco: kitEncontrado.preco,
                 discordTag: discordTag
             });
 
-            // BOTÃO CONFIRMAR
             const confirmButton = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('confirmar_pedido')
@@ -161,25 +149,14 @@ client.on('interactionCreate', async (interaction) => {
 
         } catch (error) {
             console.error('Erro ao processar:', error);
-            await interaction.reply({ 
-                content: '❌ Erro no pedido.', 
-                ephemeral: true 
-            });
         }
     }
 
-    // 💳 CONFIRMAR PEDIDO
     else if (interaction.isButton() && interaction.customId === 'confirmar_pedido') {
         try {
             const pedido = pedidosTemp.get(interaction.user.id);
             
-            if (!pedido) {
-                await interaction.reply({ 
-                    content: '❌ Pedido não encontrado.', 
-                    ephemeral: true 
-                });
-                return;
-            }
+            if (!pedido) return;
 
             // 1. ENVIAR PIX PARA O CLIENTE
             const user = await client.users.fetch(interaction.user.id);
@@ -197,36 +174,46 @@ client.on('interactionCreate', async (interaction) => {
             );
 
             await user.send({ 
-                content: '**📦 PREENCHA OS DADOS DE ENTREGA:**\n\nClique no botão abaixo para informar onde receber seu kit!', 
+                content: '**📦 PREENCHA OS DADOS DE ENTREGA:**', 
                 components: [entregaButton] 
             });
 
-            // 3. NOTIFICAR VENDEDOR
+            // 3. NOTIFICAR VENDEDOR - GARANTIDO
             try {
+                // Tentar DM primeiro
                 const adminUser = await client.users.fetch(config.seuId);
                 await adminUser.send({
                     content: `🛒 **NOVO PEDIDO!**\n\n**Cliente:** ${interaction.user.tag}\n**Kit:** ${pedido.kit}\n**Valor:** R$ ${pedido.preco.toFixed(2)}\n**Tag:** ${pedido.discordTag}`
                 });
-            } catch (adminError) {
-                console.log('Erro ao notificar:', adminError);
+                console.log('✅ Notificação DM enviada');
+            } catch (dmError) {
+                console.log('❌ DM falhou, tentando canal...');
+                // Fallback para canal
+                try {
+                    if (config.adminChannelId) {
+                        const canal = client.channels.cache.get(config.adminChannelId);
+                        if (canal) {
+                            await canal.send({
+                                content: `🔔 **NOVO PEDIDO!** <@${config.seuId}>\n\n**Cliente:** ${interaction.user.tag}\n**Kit:** ${pedido.kit}\n**Valor:** R$ ${pedido.preco.toFixed(2)}`
+                            });
+                            console.log('✅ Notificação no canal enviada');
+                        }
+                    }
+                } catch (canalError) {
+                    console.log('❌ Todas as notificações falharam');
+                }
             }
 
-            // 4. CONFIRMAÇÃO
             await interaction.update({ 
-                content: '✅ **COMPRA CONFIRMADA!**\n\n💬 **Verifique suas MENSAGENS PRIVADAS!**\n\nLá você encontrará:\n• 🔑 PIX para pagamento\n• 📋 Formulário de entrega', 
+                content: '✅ **COMPRA CONFIRMADA!**\n\n💬 **Verifique suas MENSAGENS PRIVADAS!**', 
                 components: [] 
             });
 
         } catch (error) {
             console.error('Erro ao confirmar:', error);
-            await interaction.reply({ 
-                content: '❌ Erro no pagamento.', 
-                ephemeral: true 
-            });
         }
     }
 
-    // 📋 DADOS DE ENTREGA
     else if (interaction.isButton() && interaction.customId === 'dados_entrega') {
         try {
             const modal = new ModalBuilder()
@@ -258,42 +245,47 @@ client.on('interactionCreate', async (interaction) => {
         }
     }
 
-    // ✅ FINALIZAR ENTREGA
     else if (interaction.isModalSubmit() && interaction.customId === 'formulario_entrega') {
         try {
             const coordenadas = interaction.fields.getTextInputValue('coordenadas');
             const nickMinecraft = interaction.fields.getTextInputValue('nick');
             const pedido = pedidosTemp.get(interaction.user.id);
 
-            // CONFIRMAR PARA CLIENTE
             await interaction.reply({ 
-                content: `✅ **DADOS SALVOS!**\n\n📍 **Coordenadas:** ${coordenadas}\n🎮 **Nick:** ${nickMinecraft}\n\n📸 **Agora envie o comprovante do PIX!**`, 
+                content: `✅ **DADOS SALVOS!**\n\n📍 **Coordenadas:** ${coordenadas}\n🎮 **Nick:** ${nickMinecraft}\n\n📸 **Agora envie o comprovante!**`, 
                 ephemeral: true 
             });
 
-            // NOTIFICAR VENDEDOR
+            // NOTIFICAR VENDEDOR SOBRE ENTREGA
             try {
                 const adminUser = await client.users.fetch(config.seuId);
                 await adminUser.send({
-                    content: `🚚 **DADOS DE ENTREGA!**\n\n**Cliente:** ${interaction.user.tag}\n**Kit:** ${pedido.kit}\n**Valor:** R$ ${pedido.preco.toFixed(2)}\n**Coordenadas:** ${coordenadas}\n**Nick:** ${nickMinecraft}`
+                    content: `🚚 **DADOS DE ENTREGA!**\n\n**Cliente:** ${interaction.user.tag}\n**Kit:** ${pedido.kit}\n**Coordenadas:** ${coordenadas}\n**Nick:** ${nickMinecraft}`
                 });
-                
-                pedidosTemp.delete(interaction.user.id);
-            } catch (adminError) {
-                console.log('Erro ao enviar dados:', adminError);
+            } catch (error) {
+                // Fallback para canal
+                try {
+                    if (config.adminChannelId) {
+                        const canal = client.channels.cache.get(config.adminChannelId);
+                        if (canal) {
+                            await canal.send({
+                                content: `🚚 **DADOS DE ENTREGA!** <@${config.seuId}>\n\n**Cliente:** ${interaction.user.tag}\n**Kit:** ${pedido.kit}\n**Coordenadas:** ${coordenadas}\n**Nick:** ${nickMinecraft}`
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.log('❌ Notificação de entrega falhou');
+                }
             }
+
+            pedidosTemp.delete(interaction.user.id);
 
         } catch (error) {
             console.error('Erro na entrega:', error);
-            await interaction.reply({ 
-                content: '❌ Erro ao salvar.', 
-                ephemeral: true 
-            });
         }
     }
 });
 
-// 🔧 REGISTRAR COMANDO
 client.once('ready', async () => {
     try {
         const rest = new REST({ version: '10' }).setToken(config.token);
