@@ -23,6 +23,7 @@ const client = new Client({
 
 // 📦 SEUS KITS
 const kits = {
+    'kit_especial': { nome: 'Kit Especial', preco: 15.50 },
     'kit_basico': { nome: 'Kit Básico', preco: 4.50 },
     'kit_basico_netherita': { nome: 'Kit Básico Netherita', preco: 7.50 },
     'kit_dima': { nome: 'Kit Dima', preco: 9.00 },
@@ -300,3 +301,4 @@ client.once('ready', async () => {
 });
 
 client.login(config.token);
+
